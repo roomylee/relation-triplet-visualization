@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Relation Triplet Visualization</title>
+
+    <style type="text/css">
+        .node {}
+        .link { stroke: "gray"; stroke-opacity: 1; stroke-width: 1px; }
+    </style>
+
+</head>
+
+
+<body>
+    <!-- Introduction Row -->
+    <h1>Relation Triplet Visualization</h1>
+
+
+    <script src="http://d3js.org/d3.v4.min.js" type="text/javascript"></script>
+    <script src="http://d3js.org/d3-selection-multi.v1.js"></script>
+
+    <script type="text/javascript">
+        var data = {{triplet|tojson|safe}};
+        var nodes = data.nodes,
+            links = data.links;
+
+        var colors = d3.scaleOrdinal(d3.schemeCategory10);
+        var height = 2300;
+        var width = 1500;
+
+        var svg = d3.select("body").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        var simulation = d3.forceSimulation()
+            .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(50))
+            .force("charge", d3.forceManyBody())
+            .force("center", d3.forceCenter(width / 2, height / 2));
+
+        var link = svg.selectAll(".link")
+            .data(links)
+            .enter().append("line")
+            .attr("class", "link")
+            .attr("stroke","gray");
+
+        var node = svg.selectAll(".node")
+            .data(nodes)
+            .enter().append("g")
+            .attr("class", "node");
+
+        node.append("circle")
+            .attr("r", 7)
+            .attr("node_type", function(d){return d.type})
+            .attr("node_id", function(d){return d.id})
+            .style("fill", node_color);
+
+        node.append("text")
+            .attr("dx", function (d){
+                if(d.type == "bacteria") return -12;
+                else return 12;
+            })
+            .attr("dy", ".35em")
+            .attr("text-anchor", function(d){
+                if(d.type == "bacteria") return "end";
+                else return "start";
+            })
+            .text(function(d) { return d.name });
+
+        bac_idx = 0;
+        dis_idx = 0;
+        rel_idx = 0;
+        node.append("position")
+            .attr("pos", function (d) {
+                if (d.type == "bacteria") {
+                    d.fx = 200;
+                    d.fy = 50 + 40 * bac_idx;
+                    bac_idx+=1;
+                } else if (d.type == "relation") {
+                    d.fx = 700;
+                    d.fy = 50 + 30 * rel_idx;
+                    rel_idx+=1;
+                } else {
+                    d.fx = 1200;
+                    d.fy = 300 + 100 * dis_idx;
+                    dis_idx+=1;
+                }
+            });
+
+        node.on("click", toggle);
+
+        simulation
+            .nodes(nodes)
+            .on("tick", ticked);
+
+        simulation.force("link")
+            .links(data.links);
+
+        function ticked() {
+            link
+                .attr("x1", function(d) { return d.source.x; })
+                .attr("y1", function(d) { return d.source.y; })
+                .attr("x2", function(d) { return d.target.x; })
+                .attr("y2", function(d) { return d.target.y; });
+            node
+                .attr("cx", function(d) { return d.x; })
+                .attr("cy", function(d) { return d.y; })
+                .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+        }
+
+        function node_color(d) {
+            if (d.type == "bacteria") {
+                return colors(0);
+            } else if (d.type == "disease") {
+                return colors(1);
+            } else {
+                return colors(2);
+            }
+        }
+
+
+
+        var clicked_node = {"bacteria": -1, "disease": -1, "relation": -1},
+            clicked_cnt = 0;
+        var highlight_edge_list = [];
+
+        function toggle(d) {
+            console.log(d);
+            if(d3.select(this).select("circle").attr("clicked") == null){
+                if (clicked_node[d.type] != -1) {
+                    alert("Not allowed to select multiple objects in the same type!");
+                    return;
+                }
+                clicked_node[d.type] = d.id;
+                clicked_cnt += 1;
+
+                d3.select(this).select("circle").transition()
+                    .attr("r", 15)
+                    .style("fill", "red")
+                    .attr("clicked", true);
+
+                blind(d.type, d3.select(this).select("circle").attr("node_id"));
+                updateEdgeList();
+                EdgeHighlight();
+            }
+            else{
+                clicked_node[d.type] = -1;
+                clicked_cnt -= 1;
+
+                d3.select(this).select("circle").transition()
+                    .attr("r", 7)
+                    .style("fill", node_color)
+                    .attr("clicked", null);
+
+                unblind(d.type);
+                updateEdgeList();
+                EdgeHighlight();
+            }
+        }
+
+        function blind(type, except_id) {
+            d3.selectAll("circle")
+                .filter(function(d) {return d.type == type && d.id != except_id})
+                .style("opacity", 0.3);
+        }
+        function unblind(type) {
+            d3.selectAll("circle")
+                .filter(function(d) { return d.type == type })
+                .style("opacity", 1);
+        }
+
+        function resetEdgeList(){
+            while(highlight_edge_list.length > 0)
+                highlight_edge_list.pop();
+        }
+
+        function updateEdgeList() {
+            resetEdgeList();
+            if(clicked_cnt == 1){
+                // select relation
+                if(clicked_node["relation"] != -1){
+                    link.each(function(d){
+                        if(d.target.id == clicked_node["relation"]) {
+                            highlight_edge_list.push([d.source.id, d.target.id]);
+                        }
+                    });
+                }
+                // select bacteria or disease
+                else{
+                    link.each(function(d){
+                        if(d.source.id == Math.max(clicked_node["bacteria"], clicked_node["disease"])) {
+                            highlight_edge_list.push([d.source.id, d.target.id]);
+                            highlight_edge_list.push([d.hidden, d.target.id]);
+                        }
+                    });
+                }
+            }
+            else if(clicked_cnt == 2){
+                // selected 2 nodes including relation
+                if(clicked_node["relation"] != -1){
+                    link.each(function(d){
+                        if(d.source.id == Math.max(clicked_node["bacteria"], clicked_node["disease"])
+                            && d.target.id == clicked_node["relation"]) {
+                            highlight_edge_list.push([d.source.id, d.target.id]);
+                            highlight_edge_list.push([d.hidden, d.target.id]);
+                        }
+                    });
+                }
+                // bacteria and disease are selected
+                else{
+                    link.each(function(d){
+                        if(d.source.id == clicked_node["bacteria"]
+                            && d.hidden == clicked_node["disease"]) {
+                            highlight_edge_list.push([d.source.id, d.target.id]);
+                            highlight_edge_list.push([d.hidden, d.target.id]);
+                        }
+                    });
+                }
+            }
+            else if(clicked_cnt == 3){
+                link.each(function(d){
+                    if(d.source.id == clicked_node["bacteria"]
+                        && d.target.id == clicked_node["relation"]
+                        && d.hidden == clicked_node["disease"]) {
+                        highlight_edge_list.push([d.source.id, d.target.id]);
+                        highlight_edge_list.push([d.hidden, d.target.id]);
+                    }
+                });
+            }
+        }
+
+        function EdgeHighlight() {
+            // Highlighting
+            link
+                .filter(function (d) {
+                    s_id = d.source.id;
+                    t_id = d.target.id;
+                    ret = false;
+                    highlight_edge_list.forEach(function (edge){
+                        if(s_id == edge[0] && t_id == edge[1]){ ret = true; }
+                    })
+                    return ret;
+                })
+                .style("stroke", "red")
+                .style("stroke-width", 3);
+
+            // Un-highlighting
+            link
+                .filter(function (d) {
+                    s_id = d.source.id;
+                    t_id = d.target.id;
+                    ret = false;
+                    highlight_edge_list.forEach(function (edge){
+                        if(s_id == edge[0] && t_id == edge[1]){ ret = true; }
+                    })
+                    return !ret;
+                })
+                .style("stroke", "gray")
+                .style("stroke-width", 1);
+        }
+
+
+    </script>
+
+    <!-- Footer -->
+    <footer>
+        <div class="row">
+            <div class="col-lg-12">
+                <p>Copyright 2017. Joohong Lee in Hanyang Univ. AI LAB</p>
+            </div>
+            <!-- /.col-lg-12 -->
+        </div>
+        <!-- /.row -->
+    </footer>
+</body>
+
+</html>
