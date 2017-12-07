@@ -12,6 +12,10 @@
     <title>Relation Triplet Visualization</title>
 
     <style type="text/css">
+        svg {
+            margin: auto;
+            display: block;
+        }
         .node {}
         .link { stroke: "gray"; stroke-opacity: 1; stroke-width: 1px; }
     </style>
@@ -21,7 +25,12 @@
 
 <body>
     <!-- Introduction Row -->
-    <h1>Relation Triplet Visualization</h1>
+    <h1 style="margin-top:30px; margin-left:100px;">Relation Triplet Visualization</h1>
+
+    <h4 style="margin-left:100px;">[Bacteria - Relation Word - Disease] 형태의 Relation Triplet Data에 대한 시각화 어플리케이션</h4>
+    <p style="margin-left:110px;">* Type별 하나의 Entity를 선택할 수 있습니다.<br>* Highlighting 된 Entity들은 기존 선택된 Entity들과 관련이 있습니다.</p>
+
+    <hr style="margin-left: 100px; margin-right: 100px;">
 
 
     <script src="http://d3js.org/d3.v4.min.js" type="text/javascript"></script>
@@ -38,6 +47,7 @@
         var svg = d3.select("body").append("svg")
             .attr("width", width)
             .attr("height", height);
+
 
         var simulation = d3.forceSimulation()
             .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(50))
@@ -79,25 +89,37 @@
             .attr("text-anchor", "middle")
             .text(function(d) { return d.name });
 
+        // count each type node
+        bac_cnt = 0;
+        dis_cnt = 0;
+        rel_cnt = 0;
+        node.each(function(d){
+            if(d.type == "bacteria") bac_cnt += 1;
+            else if(d.type == "disease") dis_cnt += 1;
+            else rel_cnt += 1;
+        });
+
         bac_idx = 0;
         dis_idx = 0;
         rel_idx = 0;
+        margin_horizontal = 200;
+        margin_vertical = 50;
         node.append("position")
             .attr("pos", function (d) {
                 if(d.type == "bacteria"){
-                    d.fx = 200;
-                    d.fy = 50 + 40 * bac_idx;
-                    bac_idx+=1;
+                    d.fx = margin_horizontal;
+                    d.fy = margin_vertical + (height-2*margin_vertical)/bac_cnt * (bac_idx+0.5);
+                    bac_idx += 1;
                 }
-                else if(d.type == "relation"){
-                    d.fx = 700;
-                    d.fy = 50 + 30 * rel_idx;
-                    rel_idx+=1;
+                else if(d.type == "disease"){
+                    d.fx = width - margin_horizontal;
+                    d.fy = margin_vertical + (height-2*margin_vertical)/dis_cnt * (dis_idx+0.5);
+                    dis_idx += 1;
                 }
                 else{
-                    d.fx = 1200;
-                    d.fy = 300 + 100 * dis_idx;
-                    dis_idx+=1;
+                    d.fx = width/2;
+                    d.fy = margin_vertical + (height-2*margin_vertical)/rel_cnt * (rel_idx+0.5);
+                    rel_idx += 1;
                 }
             });
 
@@ -161,6 +183,7 @@
 
                 d3.select(this).select("rect").transition()
                     .style("fill", node_color)
+                    .style("stroke-width", 3)
                     .attr("clicked", true);
 
                 blind(d.type, d3.select(this).select("rect").attr("node_id"));
@@ -320,15 +343,11 @@
 
     </script>
 
+    <hr style="margin-left: 100px; margin-right: 100px;">
+
     <!-- Footer -->
     <footer>
-        <div class="row">
-            <div class="col-lg-12">
-                <p>Copyright 2017. Joohong Lee in Hanyang Univ. AI LAB</p>
-            </div>
-            <!-- /.col-lg-12 -->
-        </div>
-        <!-- /.row -->
+        <p style="margin-left:100px"> Copyright 2017. Joohong Lee in Hanyang Univ. AI LAB </p>
     </footer>
 </body>
 
