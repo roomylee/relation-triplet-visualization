@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request, Response
 import mysql.connector as msc
 import db_config
 
@@ -11,6 +11,7 @@ config = db_config.connection_info
 
 conn = msc.connect(**config)
 qry = conn.cursor(buffered=True)
+
 
 def get_triplet_json():
     query = "SELECT Subject, Object, Relation FROM relation"
@@ -73,7 +74,74 @@ def get_triplet_json():
 # 메인 페이지 라우팅
 @app.route('/')
 def main():
-    return render_template('index.html', triplet=get_triplet_json())
+    return render_template('index.html', triplet=get_triplet_json(), paper=paper)
+
+
+paper = []
+
+def get_entity_list():
+    query = "SELECT Subject, Object, Relation FROM relation"
+
+    qry.execute(query)
+    row = qry.fetchone()
+
+    bac = []
+    dis = []
+    rel = []
+    while row is not None:
+        bac.append(row[0])
+        dis.append(row[1])
+        rel.append(row[2])
+        row = qry.fetchone()
+
+    bac = list(sorted(set(bac)))
+    dis = list(sorted(set(dis)))
+    rel = list(sorted(set(rel)))
+
+    return bac, dis, rel
+
+
+def get_paper(bac, dis, rel):
+    query = "SELECT sentence.sentence " \
+            "FROM sentence, relation " \
+            "where relation.SID=sentence.SID"
+
+    if bac != "":
+        query += " AND relation.Subject='" + bac + "'"
+    if dis != "":
+        query += " AND relation.Object='" + dis + "'"
+    if rel != "":
+        query += " AND relation.Relation='" + rel + "'"
+
+    qry.execute(query)
+    row = qry.fetchone()
+
+    paper_list = []
+    while row is not None:
+        paper_list.append(row[0])
+        row = qry.fetchone()
+
+    print(paper_list)
+    return paper_list
+
+# 서치 페이지 라우팅
+@app.route('/search')
+def search():
+    bac, dis, rel = get_entity_list()
+    return render_template('search.html', triplet=get_triplet_json(), paper=paper,
+                           bac_list=bac, rel_list=rel, dis_list=dis)
+
+
+# 체크박스에 대한 ajax처리, 선택한 정치인에 대한 정보 받아옴.
+@app.route('/search_paper', methods=["GET", "POST"])
+def triplet():
+    if request.method == 'POST':
+        global paper
+        print(request.json)
+        paper = get_paper(request.json["bacteria"], request.json["disease"], request.json["relation"])
+    return str(request.json)
+
+
 
 # 실행
 if __name__ == '__main__':

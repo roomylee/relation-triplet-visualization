@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Triplet Visualization</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="../static/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../static/css/round-about.css">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="../static/js/jquery.js"></script>
+    <script src="../static/js/bootstrap.min.js"></script>
+
+
+    <!-- jQuery -->
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script>
+        $(function() {
+            var availableTags = {{bac_list|tojson|safe}};
+            $(".bac_search").autocomplete({
+              source: availableTags
+            });
+            $(".bac_search").autocomplete( "option", "appendTo", ".Form_bac" );
+        } );
+        $(document).ready(function(){
+            $("#bac_btn").click(function(){
+                $("#bac_circle").html("Bacteria<br>"+$('input[id="bac_input"]').val());
+            });
+        });
+    </script>
+    <script>
+        $(function() {
+            var availableTags = {{rel_list|tojson|safe}};
+            $(".rel_search").autocomplete({
+              source: availableTags
+            });
+            $(".rel_search").autocomplete( "option", "appendTo", ".Form_rel" );
+        } );
+        $(document).ready(function(){
+            $("#rel_btn").click(function(){
+                $("#rel_circle").html("Relation<br>"+$('input[id="rel_input"]').val());
+            });
+        });
+    </script>
+    <script>
+        $(function() {
+            var availableTags = {{dis_list|tojson|safe}};
+            $(".dis_search").autocomplete({
+              source: availableTags
+            });
+            $(".dis_search").autocomplete( "option", "appendTo", ".Form_dis" );
+        } );
+        $(document).ready(function(){
+            $("#dis_btn").click(function(){
+                $("#dis_circle").html("Disease<br>"+$('input[id="dis_input"]').val());
+            });
+        });
+    </script>
+
+    <script>
+        function search_paper(){
+            // 사용자 ID(문자열)와 체크박스 값들(배열)을 name/value 형태로 담는다.
+            var allData = { "bacteria": $("input[id='bac_input']").val(),
+                            "relation": $("input[id='rel_input']").val(),
+                            "disease": $("input[id='dis_input']").val()};
+
+            $.ajax({
+                type : "POST",
+                url : "/search_paper",
+                data: JSON.stringify(allData, null, '\t'),
+                contentType: 'application/json;charset=UTF-8',
+                success: function(result) {
+                    console.log(result);
+                    window.location.reload(true);
+                }
+            });
+
+        }
+    </script>
+
+
+</head>
+
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand">&nbsp;AI LAB&nbsp;</a>
+            </div>
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li>
+                        <a href="/" onclick=location.href="/">Triplet Graph</a>
+                    </li>
+                    <li>
+                        <a href="/search" onclick=location.href="/search">Literature Search</a>
+                    </li>
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </div>
+        <!-- /.container -->
+    </nav>
+    <!-- Introduction Row -->
+
+
+    <style>
+        .btn-circle-lg {
+            width: 250px;
+            height: 250px;
+            text-align: center;
+            padding: 50px 0;
+            font-size: 40px;
+            line-height: 70px;
+            border-radius: 170px;
+            margin: 50px;
+        }
+        .btn-block {
+            margin-top:30px;
+            margin-bottom:30px;
+            font-size: 30px;
+        }
+        .btn:focus,.btn:active {
+            outline: none !important;
+            box-shadow: none;
+        }
+    </style>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h1 class="page-header">Literature Search via Relation Triplet</h1>
+                        <h4>[Bacteria - Relation - Disease] 형태의 Relation Triplet에 대한 Scientific Literature 검색 시스템</h4>
+                    </div>
+                </div>
+                <center>
+                    <a href="#Bacteria" data-toggle="modal" data-target="#bacModal" id="bac_circle" class="btn btn-circle-lg btn-primary">Bacteria<br>?</a>
+                    <a href="#Relation" data-toggle="modal" data-target="#relModal" id="rel_circle" class="btn btn-circle-lg btn-warning">Relation<br>?</a>
+                    <a href="#Disease" data-toggle="modal" data-target="#disModal" id="dis_circle" class="btn btn-circle-lg btn-success">Disease<br>?</a>
+
+                    <button class="btn-block" onclick="search_paper()">Literature Search!</button>
+                </center>
+            </div>
+            <div>
+                <table class="table table-hover">
+                    <tbody id="table_right">
+                        {% for p in paper %}
+                            <tr>
+                                <td>{{p}}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Modal -->
+            <div class="modal fade" id="bacModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+                            <h4 class="modal-title">Select Bacteria</h4>
+                        </div>
+                        <div class="modal-body">
+                            <center>
+                                <div class="Form_bac form-inline">
+                                    <input type="text" id="bac_input" class="bac_search form-control" style="width: 350px; margin-right: 10px"/>
+                                    <button type="button" id="bac_btn" class="btn btn-circle btn-primary" data-dismiss="modal">Select!</button>
+                                </div>
+                            </center>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Modal -->
+            <div class="modal fade" id="relModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+                            <h4 class="modal-title">Select Relation</h4>
+                        </div>
+                        <div class="modal-body">
+                            <center>
+                                <div class="Form_rel form-inline">
+                                    <input type="text" id="rel_input" class="rel_search form-control" style="width: 350px; margin-right: 10px"/>
+                                    <button type="button" id="rel_btn" class="btn btn-circle btn-primary" data-dismiss="modal">Select!</button>
+                                </div>
+                            </center>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Modal -->
+            <div class="modal fade" id="disModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+                            <h4 class="modal-title">Select Disease</h4>
+                        </div>
+                        <div class="modal-body">
+                            <center>
+                                <div class="Form_dis form-inline">
+                                    <input type="text" id="dis_input" class="dis_search form-control" style="width: 350px; margin-right: 10px"/>
+                                    <button type="button" id="dis_btn" class="btn btn-circle btn-primary" data-dismiss="modal">Select!</button>
+                                </div>
+                            </center>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Footer -->
+        <footer>
+            <hr>
+            <p style="float: right;">Copyright 2017. Joohong Lee in Hanyang Univ. AI LAB</p>
+        </footer>
+    </div>
+</body>
+
+</html>
